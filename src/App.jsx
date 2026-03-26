@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, collection, getDocs, setDoc, doc, updateDoc } from './firebase.js';
+import { db, collection, getDocs, setDoc, doc } from './firebase.js';
 
 const ADMIN_CREDENTIALS = { username: "admin", password: "lrc2024" };
 
@@ -19,7 +19,6 @@ export default function App() {
     loadUsers();
   }, []);
 
-  // Login
   const handleLogin = () => {
     if(username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password){
       setCurrentUser({ username: "admin", role: "admin" });
@@ -35,7 +34,6 @@ export default function App() {
     }
   };
 
-  // Register new user
   const handleRegister = async () => {
     if(!username || !password) return setMsg("Fill username & password");
     if(users.find(u => u.username === username)) return setMsg("Username exists");
@@ -65,7 +63,6 @@ export default function App() {
       <h2>Welcome {currentUser.username}</h2>
       <p>Role: {currentUser.role || "user"}</p>
       <button onClick={()=>setCurrentUser(null)}>Logout</button>
-      {/* Admin panel and betting UI can go here */}
     </div>
   )
 }
