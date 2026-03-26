@@ -1,3 +1,6 @@
+import { db } from "./firebase";
+import { ref, onValue, set } from "firebase/database";
+
 import { useState, useEffect, useRef } from "react";
 
 const fontLink = document.createElement("link");
