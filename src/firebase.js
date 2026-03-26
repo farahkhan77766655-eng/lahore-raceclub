@@ -1,7 +1,6 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, setDoc, doc, updateDoc } from "firebase/firestore";
+import { initializeApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
 
-// Paste your Firebase config here
 const firebaseConfig = {
   apiKey: "AIzaSyAgMhncW-5aatQYICwJ0vNgEClZPeZdmjs",
   authDomain: "lahore-race-club-e22b4.firebaseapp.com",
@@ -14,4 +13,4 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-export { db, collection, getDocs, setDoc, doc, updateDoc };
+export { db };
