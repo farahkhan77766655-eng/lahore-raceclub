@@ -1,68 +1,87 @@
-import React, { useState, useEffect } from 'react';
-import { db, collection, getDocs, setDoc, doc } from './firebase.js';
+// FIRESTORE-INTEGRATED App.jsx FOR MULTI-DEVICE LOGIN & PERSISTENCE
+import { useState, useEffect, useRef } from "react";
+import { db, collection, getDocs, setDoc, doc, updateDoc } from './firebase.js';
 
+// ─── INITIAL DATA ─────────────────────────────────────────────
 const ADMIN_CREDENTIALS = { username: "admin", password: "lrc2024" };
 
+// ─── GLOBAL STYLES ─────────────────────────────────────────────
+const GlobalStyle = () => (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Rajdhani:wght@400;500;600;700&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:#0a0a0f;color:#e8d5a3;font-family:'Rajdhani',sans-serif;}
+  `}</style>
+);
+
+// ─── MAIN APP ─────────────────────────────────────────────────
 export default function App() {
   const [users, setUsers] = useState([]);
+  const [races, setRaces] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [msg, setMsg] = useState('');
+  const [view, setView] = useState('home');
 
-  // Load users from Firestore
+  // Load users and races from Firestore on app start
   useEffect(() => {
-    async function loadUsers() {
-      const snapshot = await getDocs(collection(db, "users"));
-      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    async function loadData() {
+      const usersSnap = await getDocs(collection(db, 'users'));
+      setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+
+      const racesSnap = await getDocs(collection(db, 'races'));
+      setRaces(racesSnap.docs.map(d => ({ id: d.id, ...d.data() })));
     }
-    loadUsers();
+    loadData();
   }, []);
 
-  const handleLogin = () => {
-    if(username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password){
-      setCurrentUser({ username: "admin", role: "admin" });
-      setMsg("Admin logged in!");
+  // Example: Register new user
+  const handleRegister = async (username, password) => {
+    if (!username || !password) return;
+    if (users.find(u => u.username === username)) return;
+
+    const newUser = { username, password, balance: 1000, bets: [], role: 'user' };
+    const docRef = doc(collection(db, 'users'));
+    await setDoc(docRef, newUser);
+    setUsers([...users, { id: docRef.id, ...newUser }]);
+  };
+
+  // Example: Login
+  const handleLogin = ({ username, password }, setErr) => {
+    if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+      setCurrentUser({ username: 'admin', role: 'admin' });
+      setView('dashboard');
       return;
     }
     const user = users.find(u => u.username === username && u.password === password);
-    if(user){
-      setCurrentUser(user);
-      setMsg("Login successful!");
-    }else{
-      setMsg("Invalid username or password.");
+    if (user) setCurrentUser(user);
+    else setErr('Invalid username or password.');
+  };
+
+  // Sync currentUser with users updates
+  useEffect(() => {
+    if (currentUser && currentUser.role !== 'admin') {
+      const updated = users.find(u => u.id === currentUser.id);
+      if (updated) setCurrentUser(updated);
     }
-  };
+  }, [users]);
 
-  const handleRegister = async () => {
-    if(!username || !password) return setMsg("Fill username & password");
-    if(users.find(u => u.username === username)) return setMsg("Username exists");
+  // Render login if no user
+  if (!currentUser) return <><GlobalStyle />{/* Insert your LoginScreen component with handleLogin/handleRegister */}</>;
 
-    const newUser = { username, password, balance: 1000, bets: [], role: "user" };
-    const docRef = doc(collection(db, "users"));
-    await setDoc(docRef, newUser);
-    setUsers([...users, { id: docRef.id, ...newUser }]);
-    setMsg("User registered!");
-  };
-
-  if(!currentUser){
-    return (
-      <div style={{ padding:50 }}>
-        <h2>Lahore Race Club</h2>
-        <input placeholder="Username" value={username} onChange={e=>setUsername(e.target.value)} />
-        <input placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
-        <button onClick={handleLogin}>Login</button>
-        <button onClick={handleRegister}>Register</button>
-        <p>{msg}</p>
-      </div>
-    )
-  }
+  const isAdmin = currentUser.role === 'admin';
 
   return (
-    <div style={{ padding:50 }}>
-      <h2>Welcome {currentUser.username}</h2>
-      <p>Role: {currentUser.role || "user"}</p>
-      <button onClick={()=>setCurrentUser(null)}>Logout</button>
-    </div>
-  )
+    <>
+      <GlobalStyle />
+      <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
+        {/* Insert your TopBar component */}
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          {isAdmin && view === 'dashboard' && <>{/* AdminDashboard component with races and users */}</>}
+          {isAdmin && view === 'races' && <>{/* AdminRaces component with races state */}</>}
+          {isAdmin && view === 'users' && <>{/* AdminUsers component with users state */}</>}
+          {!isAdmin && view === 'home' && <>{/* PlayerHome component with races and currentUser */}</>}
+          {!isAdmin && view === 'my-bets' && <>{/* PlayerBets component with currentUser */}</>}
+        </div>
+      </div>
+    </>
+  );
 }
